@@ -130,6 +130,7 @@ title: Database Details
         <ul>
             <li>stickied is an integer that gets ORDERed BY when the thread list is selected. 0 will come up first, so any threads that are stickied = 0 are considered stuck. The BoardThread#getStickied() method knows about this and translates the real value into true (stuck) or false (not stuck).</li>
             <li>locked is a yes/no flag indicating whether or not any user, regardless of permissions, may continue to post in a thread. Yes indicates that the thread is closed and new posts may not be added, and no indicates that the thread is open and accepting new posts.</li> 
+        </ul>
     </li>
     <li><em>board_thread_post</em> contains the text of posts.</li> 
 </ul>
