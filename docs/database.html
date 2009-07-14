@@ -110,10 +110,11 @@ title: Database Details
     <li>shop_restock rows indicate that a specific item should stock a specific shop every so often.
         <ul>
             <li>restock_frequency_seconds is the number of seconds between attempts to perform this restock.</li>
-        <li>unixtime_next_restock is a UNIX timestamp representing the next time a restock attempt should be made.</li>
-        <li>min_price / max_price are the minimum and maximum prices this item should stock at.
-        min_quantity / max_quantity are the minimum and maximum quantities of this item that should be added to the shop's stock per restock.</li>
-        <li>store_quantity_cap is the maximum number of a specific item that the store should allow to be in stock at once. This prevents massive build-ups caused by repeated restocks of the item with nobody purchasing it.</li> 
+            <li>unixtime_next_restock is a UNIX timestamp representing the next time a restock attempt should be made.</li>
+            <li>min_price / max_price are the minimum and maximum prices this item should stock at.
+            min_quantity / max_quantity are the minimum and maximum quantities of this item that should be added to the shop's stock per restock.</li>
+            <li>store_quantity_cap is the maximum number of a specific item that the store should allow to be in stock at once. This prevents massive build-ups caused by repeated restocks of the item with nobody purchasing it.</li> 
+        </ul>
     </li>
 </ul>
 
