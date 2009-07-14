@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en" xmlns:spry='http://ns.adobe.com/spry'>
+    <head>
+        <title>Kitto | {{ page.title }}</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <style type="text/css" media="screen">
+            @import url( /css/default.css );
+            @import url( /css/syntax.css );
+        </style>
+    </head>
+    <body>
+        <div id='header'>
+            <h1><a id='site_name' href='/'>Kitto</a></h1>
+        </div>
+        <div id='main-box'>
+            <div id='left-column'>
+                <ul id='navigation-bar'>
+                    <li>Home</li>
+                    <li>News</li>
+                    <li>Downloads</li>
+                </ul>
+            </div>
+            <div id='right-column'>
+                <h2 class="page-title">{{ page.title }}</h2>
+                {{ content }}
+            </div> 
+        </div>
+        <br clear='all' /><br />
+        <div id='footer'>
+            <p>Content copyright <a href='mailto:owlmanatt+kkk@gmail.com'>Nicholas 'OwlManAtt' Evans</a> of the <a href='http://yasashiisyndicate.org'>Yasashii Syndicate.</a></p>
+            <p><a href='http://yasashiisyndicate.org'><img src='/images/yasashii_badge.png' border='0' alt='Yasashii Yoake' /></a></p>
+        </div>
+    </body>
+</html>
