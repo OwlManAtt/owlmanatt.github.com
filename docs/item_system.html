@@ -1,0 +1,108 @@
+---
+layout: default
+title: Item System
+---
+
+<p>In Kitto, an item is a specific instance of an item_type that a user owns. The item_type table holds all of the critical information about an item, such as its name, its image, and its effects. Every type refers back to one of the few rows in the item_class table to give it a category (for example, toys, food, and paintbrushes). The item_class table also hold the name of the class that is instantiated whenever the code works with this type of item.</p>
+
+<h3>Adding an Item</h3>
+<p>Adding an item can be done through the Kitto admin UI by going to the Manage Items section and adding/editing an item. This screen works with item_type entries. You may also manage the item's restocks in NPC-controlled shops by clicking on the 'Restocks' button for an existing item. An explanation of what the fields do is available at the top of the add/edit page.</p>
+
+<p>When adding a recipe, the materials can be defined by editting the item (after its been added) and hitting the <em>Manage Materials</em> link found next to the item type.</p>
+
+<p>Because adding additional item_class entries usually requires somebody to write new code, it is presumed that they have access to the database, so there is no way to administrate these through the UI.</p> 
+
+<h3>Item Classes</h3>
+<p>Item classes determine what actions can be taken with an item of that class. Furthermore, when a user-owned item object is instantiated, the PHP class name given in the item_class table will be instantiated - so any methods defined in that class will be available as an action that the item may perform.</p>
+
+<p>When defining a new item class, you must do several things:</p>
+
+<ol>
+    <li>Create the class (with, at the minimum, a #listAttributes() method)</li>
+    <li>Add the class to the <em>item_class</em> table.</li>
+    <li>Add some items with this class.</li>
+    <li>If applicable, add a case for your new class to <em>scripts/items/details.php</em> so that the <em>Use Item</em> action knows what method to call.</li> 
+</ol> 
+
+{% highlight php %}
+// To add a new item type, add the appropriate entry to 
+// item_class, define that class (use Food_Item as an example!)
+// and add a call to it's action method with the appropriate
+// parameters here.
+switch(get_class($item))
+{
+    case 'Food_Item':
+    {
+        $_SESSION['item_notice'] = $item->feedTo($pet);
+        redirect('items');
+ 
+        break;
+    } // end Food_Item
+ 
+    case 'Toy_Item':
+    {
+        $_SESSION['item_notice'] = $item->playWith($pet);
+        redirect('items');
+ 
+        break;
+    } // end Food_Item
+ 
+    case 'Paint_Item':
+    {
+        $_SESSION['item_notice'] = $item->paint($pet);
+        redirect('items');
+ 
+        break;
+    } // end Food_Item
+ 
+    default:
+    {
+        draw_errors('System error - item is of an unknown type.');
+ 
+        break;
+    } // end default
+} // end item type switch
+{% endhighlight %}
+
+<p>Kitto only supports 'Using' an item with a pet, destroying an item, and giving an item away.</p>
+
+<h3>#listAttributes()</h3>
+<p>The #listAttributes() method is required in each item class you define. This method should return an array of fields (from item_type that your item class uses (for example, Paint_Item uses the pet_specie_color_id column). This method is used to generate the appropriate form elements on the item's admin pages.</p>
+
+<p>Here are all of the supported element types and form attributes you can specify on an element:</p>
+
+{% highlight php %}
+public function listAttributes()
+{
+    return array(
+        array(
+            'name' => 'happiness_bonus', // This *must* match the column name in the database.
+            'label' => 'Happiness Level',
+            'type' => 'text', // Element type
+            'validation_type' => 'integer', // Spry validation type (use 'none' for no additional validations).
+            'max_length' => 3,
+            'size' => 4,
+        ),
+    array(
+        'name' => 'pet_specie_color_id', // This *must* match the column name in the database.
+        'label' => 'Color',
+        'type' => 'select', // Element type
+        'values' => array(
+                // "Actual value to save in the database" => "Label to show in dropdown",
+        1 => 'Red',
+        2 => 'Blue',
+            ),
+        ),
+        array(
+            'name' => 'recipe_created_item_type_id', // This *must* match the column name in the database.
+            'label' => 'Creates Item',
+            'type' => 'item', // Item search widget.
+        ),
+    );
+} // end listAttributes
+{% endhighlight %}
+
+<h3>Restocks</h3>
+<p>As previously covered, restocks can be controlled through the Kitto admin UI under the 'Manage Items' section. Once restocks have been set up on some items, the <a href='docs/ghettocron.html'>Ghettocron</a> system will run a restock cronjob every hour. The task is handled by the <em>Job_RestockShops</em> class, which just calls out to <em>ShopRestock::processPendingRestocks()</em>.</p>
+
+<p>That method will determine what item types are due for a restock, determine how many of the items should be stocked, at what price the item should be set at (the pricing change affects *all* item of that type in the shop - even left-overs from previous restocks), and whether or not it needs to add a new entry to the inventory table or simply add the quantity to the existing quantity.</p> 
