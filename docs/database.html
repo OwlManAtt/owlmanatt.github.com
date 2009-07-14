@@ -149,4 +149,11 @@ title: Database Details
             <li>include_tinymce is a yes/no flag indicating whether or not the includes for the TinyMCE javascript files should be performed. TinyMCE is a large chunk of javascript, so transferring it and having the browser parse it all every single page request does not make sense. So, for performance purposes, the includes will only be done if this flag is set to 'yes'.</li>
         </ul>
     </li>
+    <li><em>crontab</em> is used by the Ghettocron subsystem for scheduling its jobs. See the <a href='docs/ghettocron.html'>Ghettocron article</a> for more information. 
+        <ul>
+            <li>cron_class is the name of the class that should be instantiated when it is time to run this cronjob.</li>
+            <li>cron_frequency_seconds is the number of seconds between each run.</li>
+            <li>unixtime_next_run is a UNIX timestamp representing the next time at which the ghettocronjob should run.</li>
+        </ul>
+    </li>
 </ul>
