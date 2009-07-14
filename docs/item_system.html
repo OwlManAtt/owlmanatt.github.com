@@ -24,7 +24,7 @@ title: Item System
     <li>If applicable, add a case for your new class to <em>scripts/items/details.php</em> so that the <em>Use Item</em> action knows what method to call.</li> 
 </ol> 
 
-{% highlight php startinline %}
+{% highlight php startinline=True %}
 // To add a new item type, add the appropriate entry to 
 // item_class, define that class (use Food_Item as an example!)
 // and add a call to it's action method with the appropriate
@@ -71,7 +71,7 @@ switch(get_class($item))
 
 <p>Here are all of the supported element types and form attributes you can specify on an element:</p>
 
-{% highlight php startinline %}
+{% highlight php startinline=True %}
 public function listAttributes()
 {
     return array(
