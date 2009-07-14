@@ -1,0 +1,150 @@
+---
+layout: default
+title: Database Details
+---
+
+<p>This article will provide you with information on how and why the Kitto database works the way it does. This database is (almost) completely in the third-normalized form, so it is optimized for write operations. The only non-normalized area is in the private message table.</p>
+
+<p>I will be explaining tables in 'clusters'. A 'cluster' is a group of related tables on the ER (entity relationship) drawing to the right. These tables will be close together (hence 'cluster'). Each table in a cluster will receive a bullet-point with a short description of its purpose. If there are any noteworthy columns in that table (columns whose purpose is non-obvious or otherwise require explanation), they will receive a bullet-point under that table.</p>
+
+<p>An ER diagram is <a href='/images/kitto_er.png'>available in PNG format</a>. You should consult this diagram whilst reading the below.</p>
+
+<h3>User Cluster</h3>
+<ul>
+    <li><em>user</em> holds users.
+        <ul>
+            <li>password_hash is the md5sum the user's password plus a salt. </li>
+            <li>password_hash_salt The salt used to generate the password hash. This is a random 32-character string that will be replaced by a new string whenever the user changes their password. The use of a salt is useful in <a href='http://en.wikipedia.org/wiki/Rainbow_Table#Defense_against_rainbow_tables'>preventing rainbow table attacks</a> in the event that somebody gets a copy of your database.</li>
+            <li>current_salt_hash and current_salt_expiration hold information regarding the token that is stored in the cookie. If the time in the expiration column comes to pass, the salt will be destroyed and the user will be logged out.</li>
+            <li>avatar_id holds the user's preferred avatar ID. This field is optional, so it may be 0.</li> 
+        </ul>
+    </li>
+    <li><em>avatar</em> is LEFT JOIN'd to the user table (so it is optional) and provides the user's selected avatar. </li>
+    <li><em>timezone </em> and datetime_format are INNER JOIN'd to the user table. They provide the user's timezone and the date/time format that they prefer to see dates/times in. If these tables are empty, a user cannot exist.</li>
+    <li><em>user_notification</em> holds events for a specific user. These may be things like a user received an item from another user, or the user has a new private message waiting for them.
+        <ul>
+            <li>notification_text holds the actual message that the user will be shown.</li>
+            <li>notification_url holds a URL fragment. This fragment is the page that the user will be redirected to when they click on the event text. The fragment should be in the format /page-slug/any/additional/arguments. You can add new notifications using the User#notify() method. </li>
+        </ul>
+    </li>
+    <li><em>user_online</em> is a <a href='http://dev.mysql.com/doc/refman/5.0/en/memory-storage-engine.html'>MEMORY</a> table that stores information about users and guests who are browsing the site.
+        <ul>
+            <li>user_type will reflect whether or not the client is a logged-in user or just a guest.</li>
+            <li>user_id will be populated if the user_type = user.</li>
+            <li>client_ip will be populated if the user_type = guest.</li>
+            <li>client_user_agent is the browser being used.</li>
+        </ul> 
+    </li> 
+</ul>
+
+<h3>Permission Cluster</h3>
+<p>See the <a href='/docs/permissions.html'>permission system details</a> article for more information on how permissions work.</p>
+
+<ul>
+    <li><em>staff_group</em> is a group for users.
+        <ul>
+            <li>show_staff_group is a yes/no flag that indicates whether or not this group should be listed on the staff page. Yes indicates that the group should be displayed, and no indicates that it should not.</li>
+            <li>order_by is a number that is used for determining what order to show the groups on the staff page. An ORDER BY order_by ASC is done when selecting the group list.</li>
+        </ul>
+    </li>
+    <li><em>user_staff_group</em> is a mapping of users to groups. A row in this table places a user in a specific group.</li>
+    <li><em>staff_permission</em> contains all of the permissions for your site.
+        <ul>
+            <li>api_name is the string you supply when doing a User#hasPermission() call.</li>
+        </ul>
+    </li>
+    <li><em>staff_group_staff_permission</em> is a mapping of groups to permissions. A row in this table indicates that a specific group is granted a specific permission.</li> 
+</ul>
+
+<h3>Private Message Cluster</h3>
+<ul>
+    <li><em>user_message</em> holds private messages. A private message row is a single message from exactly one user and received by exactly one user. The carbon-copy feature of the messaging system creates one or more rows in this table - one row for each recipient of the message.
+        <ul>
+            <li>recipient_list is a specially-formatted string that holds a complete list of recipients. Since it is immensely annoying to store this detail in a normalized manner (hold recipients in another table for a 'message group', only delete those rows when *every* instance of the message in the message group is deleted, etc.), I elected to store the user ID / username in a text field. To make working with this ugly hack easier, the Message#setRecipientList() and Message#getRecipientList() methods parse this string and return an array.</li>
+        </ul>
+    </li>
+</ul>
+
+<h3>Pet Cluster</h3>
+<ul>
+    <li><em>user_pet</em> links together three things - a particular species of a pet, a particular color, and a user. Rows in this table are actual instances of user-owned pets.
+        <ul>
+            <li>unixtime_next_decrement is a <a href='http://en.wikipedia.org/wiki/Unix_time'>UNIX timestamp</a> representing the next time the pet's hunger/happiness levels should drop.</li>
+        </ul>
+    </li>
+    <li><em>pet_specie</em> rows represent each unique species of pet.
+        <ul>
+            <li>relative_image_dir is the name of the folder which holds the pet's images. The folder should be relative to <em>resources/pets/</em>.</li>
+        </ul>
+    </li>
+    <li><em>pet_specie_color</em> represents each individual color that may be applied to the different pet species. This table should contain one entry for red, one for blue, etc.
+        <ul>
+            <li>base_color is a yes/no flag that indicates whether or not this is a basic color that a pet may be created in during the <em>Adopt a Pet</em> process. Yes means that the color is available, no means that is is not.</li> 
+        </ul>
+    </li>
+    <li><em>pet_specie_pet_specie_color</em> is a table that maps the different colors to a species of pet. A row in this table means that a pet species is available in a certain color. 
+        <ul>
+            <li>During the adopt process, this mapping is used to determine what basic colors the pet has. For example, one species may have images drawn for red, green, and yellow, while another may only have images for red and green. It is perfectly acceptable to only build mappings for the two colors that the second species has, and the adopt page will only show those two colors in the color dropdown menu.</li>
+            <li>When a user tries to use a paint item, the mapping is used to determine if the species can be painted in that color. If there is no mapping for the species and the item's color, the user will be politely informed of the failure and their item will *not* be destroyed.</li>
+        </ul>
+    </li>
+</ul> 
+
+<h3>Item Cluster</h3>
+<ul>
+    <li><em>user_item</em> rows map together two things - a user and an item type. Rows in this table are actual instances of items in a user's inventory.</li>
+    <li><em>item_class</em> is a table of 'types' for <em>item_type</em>. Entries in this table are high-level types - food, paint, toy, etc. A row in this table should also have a corresponding *_Item class.
+        <ul>
+            <li>php_class is the name of the class for this particular type of item.
+            <li>relative_image_dir is the folder, relative to resources/items/, in which images for this item type should reside.
+            <li>verb is the text that will be used on the use item page in the sentence <em>"which pet would you like to {$VERB} with the {$ITEM_NAME}?"</em>. 
+        </ul>
+    </li>
+    <li><em>item_type</em> are the different types of items (ie, Red Apple, Green Apple, Ball) available in your application.</li> 
+</ul>
+
+<h3>Shop Cluster</h3>
+<ul>
+    <li><em>shop</em> contains the NPC-owned shops.</li>
+    <li><em>shop_inventory</em> rows are a specific quantity of a specific item being available for a specific price in a specific shop.</li>
+    <li>shop_restock rows indicate that a specific item should stock a specific shop every so often.
+        <ul>
+            <li>restock_frequency_seconds is the number of seconds between attempts to perform this restock.</li>
+        <li>unixtime_next_restock is a UNIX timestamp representing the next time a restock attempt should be made.</li>
+        <li>min_price / max_price are the minimum and maximum prices this item should stock at.
+        min_quantity / max_quantity are the minimum and maximum quantities of this item that should be added to the shop's stock per restock.</li>
+        <li>store_quantity_cap is the maximum number of a specific item that the store should allow to be in stock at once. This prevents massive build-ups caused by repeated restocks of the item with nobody purchasing it.</li> 
+    </li>
+</ul>
+
+<h3>Board Cluster</h3>
+<ul>
+    <li><em>board</em> rows are the different forums that threads can be created in.
+        <ul>
+            <li>board_locked is a yes/no flag indicating whether or not the creation of threads by non-admin users is restricted. Yes means that only users with a certain permission may create new threads, and no means that any user may create threads. This flag does not cause threads inside the board to be restricted.</li>
+            <li>news_source is a yes/no flag indicating whether or not thread from this board should be considered news items and shown on the news page. Yes indicates that threads should be used as news items, and no indicates that they should not.</li> 
+        </ul>
+    </li>
+    <li><em>board_thread</em> rows represent all of the threads that exist.
+        <ul>
+            <li>stickied is an integer that gets ORDERed BY when the thread list is selected. 0 will come up first, so any threads that are stickied = 0 are considered stuck. The BoardThread#getStickied() method knows about this and translates the real value into true (stuck) or false (not stuck).</li>
+            <li>locked is a yes/no flag indicating whether or not any user, regardless of permissions, may continue to post in a thread. Yes indicates that the thread is closed and new posts may not be added, and no indicates that the thread is open and accepting new posts.</li> 
+    </li>
+    <li><em>board_thread_post</em> contains the text of posts.</li> 
+</ul>
+
+<h3>Utility Tables</h3>
+<ul>
+    <li><em>jump_page</em> rows each correspond to a page slug. The row provides information such as permissions, page titles, and the physical file to include.
+        <ul>
+            <li>page_title is the title that is put in between the &lt;title&gt; tags.</li>
+            <li>page_html_title is the title that is displayed in the body of the page. Normally, you would want this to match the page_title, but in some cases you may want to put HTML into the title. HTML tags in the &lt;title&gt; tag do not work, so a separate field is needed.</li>
+            <li>layout_type determines which layout the page should use. At this time, only the 'deep' layout is used.</li>
+            <li>page_slug is the 'slug' for the page. In the URL for a thread, yoursite.com/boards/1, the boards section is the slug. The slug in the URL is used to look up a jump_page entry and load the appropriate PHP script.</li>
+            <li>access_level determines what permission model the page should use. 'Public' means that there are no restrictions on who can view the page. 'User' indicates that the client must be logged in to view the page. 'Restricted' means that the permission in 'restricted_permission_api_name' should be checked, and if the user has that permission, they may view the page.</li>
+            <li>restricted_permission_api_name is the permission that should be checked before allowing the client to access the page *only if* the access_level field is set to 'restricted'.</li>
+            <li>php_script is the file to load, relative to the root of your Kitto install.</li>
+            <li>include_tinymce is a yes/no flag indicating whether or not the includes for the TinyMCE javascript files should be performed. TinyMCE is a large chunk of javascript, so transferring it and having the browser parse it all every single page request does not make sense. So, for performance purposes, the includes will only be done if this flag is set to 'yes'.</li>
+        </ul>
+    </li>
+</ul>
