@@ -100,7 +100,17 @@ title: Database Details
             <li>verb is the text that will be used on the use item page in the sentence <em>"which pet would you like to {$VERB} with the {$ITEM_NAME}?"</em>. 
         </ul>
     </li>
-    <li><em>item_type</em> are the different types of items (ie, Red Apple, Green Apple, Ball) available in your application.</li> 
+    <li><em>item_type</em> are the different types of items (ie, Red Apple, Green Apple, Ball) available in your application.
+        <ul>
+            <li>happiness_bonus / hunger_bonus / pet_specie_color_id are all related to a specific item type.</li>
+            <li>item_image is relative to the item class' folder.</li>
+            <li>recipe_created_item_type_id / recipe_batch_quantity are related to recipe items. They define how many of a specific type of item your recipe results in.</li>
+            <li>unique_item is a yes/no flag. When set to yes, a user will only be allowed to own one of that item type. This is useful for things like recipes, where you'd only want a user to own one copy.</li>
+            <li>transferable_item is a yes/no flag that indicates whether or not a user may give away a type of item.</li> 
+        </ul>
+    </li> 
+    <li><em>item_recipe_material</em> defines the ingredients for a recipe.</li>
+    <li><em>item_recipe_type</em> is a lookup table with recipe types (recipe, blueprint, etc).</li>
 </ul>
 
 <h3>Shop Cluster</h3>
@@ -147,6 +157,7 @@ title: Database Details
             <li>restricted_permission_api_name is the permission that should be checked before allowing the client to access the page *only if* the access_level field is set to 'restricted'.</li>
             <li>php_script is the file to load, relative to the root of your Kitto install.</li>
             <li>include_tinymce is a yes/no flag indicating whether or not the includes for the TinyMCE javascript files should be performed. TinyMCE is a large chunk of javascript, so transferring it and having the browser parse it all every single page request does not make sense. So, for performance purposes, the includes will only be done if this flag is set to 'yes'.</li>
+            <li>show_layout is a yes/no flag that determines if the regular header/footer layout templayes should be rendered. Setting this to no is useful for pages that will be requested/used by an AJAX callback.</li>
         </ul>
     </li>
     <li><em>crontab</em> is used by the Ghettocron subsystem for scheduling its jobs. See the <a href='docs/ghettocron.html'>Ghettocron article</a> for more information. 
