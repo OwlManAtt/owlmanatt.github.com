@@ -3,40 +3,40 @@ layout: default
 title: Method List
 ---
 
-<p>ActiveTable's API makes heavy use of <em>#__call()</em> method. The PHP manual <a href='http://us2.php.net/manual/en/language.oop5.overloading.php' explains #__call()</a> as:</p>
+<p>ActiveTable's API makes heavy use of <em>#__call()</em> method. The PHP manual <a href='http://us2.php.net/manual/en/language.oop5.overloading.php'> explains <em>#__call()</em></a> as:</p>
 
-<blockquote>The magic method __call() allows to capture invocation of non existing methods. That way __call() can be used to implement user defined method handling that depends on the name of the actual method being called. This is for instance useful for proxy implementations. The arguments that were passed in the function will be defined as an array in the $arguments parameter. The value returned from the __call() method will be returned to the caller of the method.</blockquote>
+<blockquote>The magic method <em>__call()</em> allows to capture invocation of non existing methods. That way <em>__call()</em> can be used to implement user defined method handling that depends on the name of the actual method being called. This is for instance useful for proxy implementations. The arguments that were passed in the function will be defined as an array in the $arguments parameter. The value returned from the <em>__call()</em> method will be returned to the caller of the method.</blockquote>
 
-<p>So, methods that are called but not explicitly defined by the class or one of its ancestors are handed to #__call().</p>
+<p>So, methods that are called but not explicitly defined by the class or one of its ancestors are handed to <em>#__call()</em>.</p>
 
 <h3>#get() Family</h3>
 <ul>
     <li><strong>#get(string column_name, string|null table_name)</strong> - Returns the value from a physical or virtual column. The table name may be specified to avoid column name collisions.</.i>
-    <li><strong>#getColumnName()</strong> - Returns the value from a physical or virtual column. The method is never defined, but the appropriate #get() is generated from the method name.</li>
-    <li><strong>#getColumn_name()</strong> - A variation of #getColumnName() that does not rely on studly caps.</li>
+    <li><strong>#getColumnName()</strong> - Returns the value from a physical or virtual column. The method is never defined, but the appropriate <em>#get()</em> is generated from the method name.</li>
+    <li><strong>#getColumn_name()</strong> - A variation of <em>#getColumnName()</em> that does not rely on studly caps.</li>
 </ul>
 
 <h3>#set() Family</h3>
 <ul>
     <li><strong>#set(mixed value, string column_name, string|null table_name)</strong> - Set a column to a new value in-memory. The table name may be specified if there are write-enabled lookup tables to avoid column-name collision.</li>
-    <li><strong>#setColumnName(mixed value)</strong> - Sets a column to a new value in-memory. The method is never defined, but the appropriate #set() is generated from the method name.</li>
-    <li><strong>#setColumn_name()</strong> - A variation of #setColumnName() that does not rely on studly caps.</li>
+    <li><strong>#setColumnName(mixed value)</strong> - Sets a column to a new value in-memory. The method is never defined, but the appropriate <em>#set()</em> is generated from the method name.</li>
+    <li><strong>#setColumn_name()</strong> - A variation of <em>#setColumnName()</em> that does not rely on studly caps.</li>
 </ul>
 
 <h3>#findBy() Family</h3>
 <ul>
     <li><strong>#findBy(array conditions, string|null order_by_sql_fragment)</strong> - Perform a query with a WHERE clause and return an array of results.</li>
     <li><strong>#findByColumnName(mixed value, string|null order_by_sql_fragment)</strong> - Perform a query with a ''WHERE column_name = value'' and return an array of results.</li>
-    <li><strong>#findByColumn_name(mixed value, string|null order_by_sql_fragment)</strong> - A variation of #findByColumnName() which does not rely on studly caps.</li>
-    <li><strong>#findOneBy(array, string|null order_by_sql_fragment)</strong> - An alias for #findBy() that places a LIMIT 1 on to the query and returns an object (or null, if no matching records are found) instead of an array of results.</li>
-    <li><strong>#findOneByColumnName(mixed value, string|null order_by_sql_fragment)</strong> - Perform a #findOneBy() with a ''WHERE column_name = value'' and return the result.</li>
-    <li><strong>#findByColumn_name(mixed value, string|null order_by_sql_fragment)</strong> - A variation of #findOneByColumnName() which does not rely on studly caps.</li>
+    <li><strong>#findByColumn_name(mixed value, string|null order_by_sql_fragment)</strong> - A variation of <em>#findByColumnName()</em> which does not rely on studly caps.</li>
+    <li><strong>#findOneBy(array, string|null order_by_sql_fragment)</strong> - An alias for <em>#findBy()</em> that places a LIMIT 1 on to the query and returns an object (or null, if no matching records are found) instead of an array of results.</li>
+    <li><strong>#findOneByColumnName(mixed value, string|null order_by_sql_fragment)</strong> - Perform a <em>#findOneBy()</em> with a ''WHERE column_name = value'' and return the result.</li>
+    <li><strong>#findByColumn_name(mixed value, string|null order_by_sql_fragment)</strong> - A variation of <em>#findOneByColumnName()</em> which does not rely on studly caps.</li>
 
 <h3>#grab() Family</h3>
 <ul>
     <li><strong>#grab(string recordset_name)</strong> - Perform a query to find and return an array of related (by a one-to-many relationship) records.</li>
-    <li><strong>#grabRecordsetName()</strong> - Perform a #grab() and return an array of related records.</li>
-    <li><strong>#grabRecordset_name()</strong> - A variation of #grabRecordSetName() that does not rely on studly caps.</li>
+    <li><strong>#grabRecordsetName()</strong> - Perform a <em>#grab()</em> and return an array of related records.</li>
+    <li><strong>#grabRecordset_name()</strong> - A variation of <em>#grabRecordSetName()</em> that does not rely on studly caps.</li>
 </ul>
 
 <h3>CRUD</h3>
