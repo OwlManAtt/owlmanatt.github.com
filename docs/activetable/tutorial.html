@@ -224,3 +224,29 @@ foreach($users as $user)
 } // end loop
 ?>
 {% endhighlight %} 
+
+<h3>ORDER BY</h3>
+<p>There are two ways to do an ORDER BY - a SQL fragment (deprecated behaviour) or an array.</p>
+
+{% highlight php %}
+-- The SQL fragment is a deprecated behaviour that will (eventually) be removed.
+$timezones = new Timezone($db);
+$timezones = $timezones->findBy(array(),'ORDER BY order_by, timezone_continent, timezone_short_name ASC');
+
+-- And here's by passing an array:
+$timezones = new Timezone($db);
+$timezones = $timezones->findBy(array(),array(
+    'direction' => 'ASC',
+    'columns' => array(
+        array(
+            // Table defaults to the class' table; it can be omitted. 
+            'table' => 'timezone',
+            'column' => 'timezone_continent'
+        ),
+        array(
+            'column' => 'timezone_short_name'
+        ),
+    ),
+));
+?>
+{% endhighlight %}
