@@ -1,0 +1,152 @@
+<p>ActiveTable will allow you to express a one-to-many relationship (and, through that, a many-to-many relationship) using the $RELATED array. Related recordsets are one or more rows that correspond to a row in another table. That other table must have an existing ActiveTable-enabled class defined.</p>
+
+<p>This tutorial will expand on the <a href='/docs/activetable/tutorial.html'>first tutorial</a> and build ActiveTable classes for more Kitto tables.</p>
+
+<h3>One-to-many Relationships</h3>
+<p>Loading the many from the one is easily achieved - one simply defines something similar to a join, creates an ActiveTable-enabled class to represent the other table, and #grabs() the record set. The example below speaks for itself.</p>
+
+<p>Be aware that defining a list of related recordsets does not have a noticeable impact on performance. No queries are run until the grab is performed. The resulting recordset is cached in the object, so any subsequent calls to re-grab a recordset likewise result in no queries being executed.</p>
+
+<p>If you set up objects with reciprocating relations, also be advised that you must specify all of the attributes for a related recordset in at least one class. The way that related recordsets determine the table names and primary key for the opposite class is by creating an instance of the class - which, in turn, checks all of its recordsets and will instantiates the original object to get its table and key. That behavior will go into an infinite loop and break your application, and it can be avoided by specifying all of the parameters in the array.</p>
+
+{% highlight php %}
+<?php
+// Here's a class to represent pets - the 'many' in our one-to-many relationship.
+class Pet extends ActiveTable
+{
+    protected $table_name = 'user_pet';
+    protected $primary_key = 'user_pet_id';
+    protected $LOOKUPS = array(
+        array(
+            'local_key' => 'pet_specie_id',
+            'foreign_table' => 'pet_specie',
+            'foreign_key' => 'pet_specie_id',
+            'join_type' => 'inner',
+        ),
+        array(
+            'local_key' => 'pet_specie_color_id',
+            'foreign_table' => 'pet_specie_color',
+            'foreign_key' => 'pet_specie_color_id',
+            'join_type' => 'inner',
+        ),
+    );
+} // end Pet
+
+// And now, adding a $RELATED attribute to our User class from the previous tutorial...
+class User extends ActiveTable
+{
+    protected $table_name = 'user';
+    protected $primary_key = 'user_id';
+    protected $LOOKUPS = array(
+        array(
+            'local_key' => 'avatar_id',
+            'foreign_table' => 'avatar',
+            'foreign_key' => 'avatar_id',
+            'join_type' => 'left',
+        ),
+        array(
+            'local_table' => 'user',
+            'local_key' => 'timezone_id',
+            'foreign_table' => 'timezone',
+            'foreign_key' => 'timezone_id',
+            'join_type' => 'inner',
+        ),    
+    );
+    protected $RELATED = array(
+        'pets' => array(
+            'class' => 'Pet',
+            'local_table' => 'user',
+            'local_key' => 'user_id',
+            'foreign_table' => 'user_pet',
+            'foreign_key' => 'user_id',
+            'foreign_primary_key' => 'user_pet_id',
+        ),
+    );
+} // end User class
+ 
+$user = new User($db);
+$user = $user->findOneByUserId(1);
+ 
+print "Showing pets for {$user->getUserName()}...";
+foreach($user->grabPets() as $pet)
+{
+    print "Name: {$pet->getPetName()}...";
+}
+?>
+{% endhighlight %}
+
+<h3>Many-to-many Relationships</h3>
+<p>Many-to-many relationships can be represented with a class to represent the table that the other two are joined together through. This example illustrates the RecipeMateiral class that has the capacity to #grab() the original recipe item <em>and</em> the material in question.</p>
+
+{% highlight php %}
+<?php
+// Here's one side of the relationship - the actual recipe item.
+class Recipe_Item extends Item
+{
+    // . . . irrelevant lines trimmed out . . . 
+
+    protected $RELATED = array(
+        'materials' => array(
+            'class' => 'RecipeMaterial',
+            'local_table' => 'item_type',
+            'local_key' => 'item_type_id',
+            'foreign_table' => 'item_recipe_material',
+            'foreign_key' => 'recipe_item_type_id',
+            'foreign_primary_key' => 'item_recipe_material_id',
+        ),
+    );
+} // end RecipeItem
+
+// And this is the other end - we're using the generic ItemType class
+// to represent the ingredients.
+class ItemType extends ActiveTable
+{
+    protected $table_name = 'item_type';
+    protected $primary_key = 'item_type_id';
+    protected $LOOKUPS = array(
+        array(
+            'local_key' => 'item_class_id',
+            'foreign_table' => 'item_class',
+            'foreign_key' => 'item_class_id',
+            'join_type' => 'inner',
+        ),
+    );
+} // end ItemType
+
+// And here's where the magic comes in - an object to sit between the two tables.
+// This is what makes our relationship many-to-many.
+class RecipeMaterial extends ActiveTable
+{
+    protected $table_name = 'item_recipe_material';
+    protected $primary_key = 'item_recipe_material_id';
+    protected $RELATED = array(
+        'recipe' => array(
+            'class' => 'Recipe_Item',
+            'local_key' => 'recipe_item_type_id',
+            'foreign_key' => 'item_type_id',
+            
+            // One means that the grab() will behave like findOneBy() instead of findBy()
+            // and return an object instead of an array. An instance of this object represents
+            // *one* row that links an ingredient to a recipe.
+            'one' => true,
+        ),
+        'material' => array(
+            'class' => 'ItemType',
+            'local_key' => 'material_item_type_id',
+            'foreign_key' => 'item_type_id',
+            'one' => true,
+        ),
+    );
+} // end RecipeMaterial
+?>
+{% endhighlight %}
+
+<h3>grab() and COUNT(*)/Slices</h3>
+<p>The #grab() method supports counting and retrieving record set slices, just as #findBy() does.</p>
+
+{% highlight php %}
+<?php
+$total_rows = $ActiveObject->grabOtherThings('ORDER BY id',true);
+$twenty_five_rows = $ActiveObject->grabOtherThings('ORDER BY id',false,1,25);
+?>
+{% endhighlight %}
