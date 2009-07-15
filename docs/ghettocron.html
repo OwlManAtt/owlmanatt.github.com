@@ -1,0 +1,34 @@
+---
+layout: default
+title: Ghettocron
+---
+
+Ghettocron is an emulation of a real UNIX Cron daemon - a time-based scheduler that will execute a certain program at a specified time.
+
+<h3>Crontab</h3>
+<p>The list of cron jobs to run is traditionally stored in a crontab text file. In the Kitto Ghettocron system, this file is replaced by the cron_tab table in the database. The two important columns in this table are cron_frequency_seconds, which defines how many seconds must pass before the job is run again, and cron_class, which specifies what class to instantiate when running the cronjob.</p>
+
+<h3>Creating a New Job</h3>
+<p>Creating a new cronjob is easy. First, create a new class file in includes/cronjobs/. Your class should implement the Job interface and have a constructor that takes in a database connector as the first argument. You must defined the #performJob() method to do whatever work your cronjob needs to do.</p>
+
+{% highlight php %}
+<?php
+class Job_BanEveryone implements Job
+{
+    protected $db;
+
+    public function __construct(&$db)
+    {
+        $this->db = $db;
+    } // end __construct
+
+    public function performJob()
+    {
+        $this->db->query("UPDATE user SET access_level = 'banned'");
+    } // end performJob
+} // end Job_BanEveryone
+?>
+{% endhighlight %}
+
+<h3>Etymology</h3>
+<p>The term <em>ghettocron</em> is believed to have been coined by one of the Knight brothers at the dawn of the twenty-first century whilst he was working on the original Operation: Pet Game codebase. 
