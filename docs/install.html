@@ -1,0 +1,95 @@
+---
+layout: default
+title: Install Guide
+---
+<h3>Requirements</h3>
+<ul>
+    <li>PHP >= 5.0</li>
+    <li>A Relational Database such as...
+        <ul>
+            <li>MySQL >= 4</li>
+            <li>PostgreSQL >= 8.1</li>
+            <li>Oracle 9i/10g might actually work with a few changes (grep the includes/ directory for @rdbms-specific to see what you need to change).</li>
+            <li>MS SQL >= 2003 may work too - ActiveTable hasn't been tested extensively on MS SQL. Again, grep the includes/ directory for @rdbms-specific to find the handful of queries you'd need to rewrite.</li>
+        </ul>
+<li>Apache + mod_rewrite
+    <ul>
+        <li>If you want to write lighttpd rewrite rules, PLEASE SEND THEM TO ME!
+        <li>Microsoft IIS is not supported. If you have any skill with ISAPI_Rewrite (or a similar mod_rewrite-like thing for IIS), please feel free to write a set of rules and send them to me.
+        <li>The Windows XAMPP software is capable of running Kitto, but you must <a href='http://rudyegenias.wordpress.com/2006/08/21/enabling-mod-rewrite-in-xampp/'>enable mod_rewrite</a> for it to work.</li>
+    </ul>
+</li>
+
+<p>If you're looking to purchase hosting for Kitto, you're probably looking for hosting on Linux, not Windows. While it is possible to install Apache on Windows, I do not know of any hosting providers who offer Apache on Windows - they usually have IIS.</p>
+
+<p>For shared hosting, Kitto recommends <a href='http://www.dreamhost.com/hosting.html'>Dreamhost</a>. For more technical-minded folks who can set up their own server, a VPS from <a href='http://linode.com'>Linode</a> is a great choice.</p>
+
+<h3>Prep Work</h3>
+<ol>
+    <li>Unzip the package and transmit its contents to your webserver.</li>
+    <li>Visit yoursite.com/path/to/kitto/system_check.php to run the compatibility check program.
+        <ul>
+            <li>This will let you know if your webserver will work with KittoKittoKitto, and if not, exactly why it will not work.</li>
+        </ul>
+    </li>
+</ol>
+
+<h3>Code Setup</h3>
+<ol>
+    <li>Chmod the <em>/cache/</em> dir so that it is writable by the webserver.</li>
+    <li>Chmod the <em>/template/cache</em>, <em>/template/config/</em>, and <em>/template/templates_c</em> directories to be writable by the webserver. However, DO NOT DO THIS TO <em>/template/templates</em> - that is insecure.</li>
+    <li>Edit <em>/includes/config.inc.php</em>. You need to specify your database/user/pw, the base path (on the filesystem), and the public directory (the base URL), at the minimum. There are lots more options to play with in there, though. Don't fret - there's lots of in-line documentation.</li>
+    <li>Rename the <em>_htaccess</em> file to <em>.htaccess</em>. Without the mod_rewrite rules provided by this file, your installation will not work.</li>
+    <li>Open this file and change the line 'RewriteBase /kittokittokitto' to what is appropriate for your installation. The /kittokittokitto is the base path of your installation. Examples:
+        <ul>
+            <li>http://demo.kittokittokitto.yasashiisyndicate.org/ = /</li>
+            <li>http://bell.owl.ys/kittokittokitto = /kittokittokitto</li>
+            <li>http://example.org/apps/kitto = /apps/kitto</li>
+         </ul>
+    </li>
+</ol>
+
+<h3>Database Setup</h3>
+<ol>
+    <li>Load the db/mysql_ddl.sql file into your MySQL database. It contains all of the table structures needed by this app.</li>
+<li>You're out of luck if you want Oracle/MSSQL DDL. If you port it, please send the SQL to me!</li>
+<li>Load some SQL files from db/mysql_data (or db/pgsql_data for Postgres) in to your database. These contain seed data. To load all of the seed data at once, load in the db/data/_all.sql file.
+    <ul>
+        <li>You can opt to load in some data instead of all of it by loading the tables in file-by-file. If you want to do this instead of using _all.sql, note that the following files are <strong>required</strong> to have your site work. If these files are not loaded, it will cause your installation to be inoperable.
+            <ul>
+                <li>jump_pages.sql</li>
+                <li>datetime_format.sql</li>
+                <li>timezone.sql</li>
+                <li>staff_permission.sql </li>
+            </ul>
+        </li>
+        <li>Unless you are an advanced Kitto developer and know *exactly* what you are doing, you will need to load these files to have your site be useful:
+            <ul>
+                <li>cron_tab.sql</li>
+                <li>item_class.sql</li>
+                <li>staff_group.sql</li>
+            </ul>
+        </li>
+    </ul>
+</ol>
+
+<p><strong>Note</strong>: If you are new to Kitto, I strongly advise you load *all* of the sample data in, and not just those few files. Even if you intend to delete the pets and item_types as soon as your installation is complete, they will provide you with an idea of how everything fits together in the admin panel.</p>
+
+<h3>Create An Admin User</h3>
+<p>There is nothing special done by the registration page for the first user created. It will be a normal user account. Since there are no other admin accounts, you will need to take some action to make the user an administrator. Once this bootstrapping is done, you can change a user's permissions through the admin panel.</p>
+
+<ol>
+    <li>Sign up through the register page to create your user. You can check this by clicking on your username - the number at the end of the URL is your user ID. I will use 3 in this example.</li>
+    <li>If you have loaded the staff_group.sql data file, you can run these two queries to give your account admin rights:
+    {% highlight sql %}
+    -- Put your user (keeping with our example, user ID 3) to group ID 1 - Administrators. 
+    INSERT INTO user_staff_group (user_id,staff_group_id) VALUES (3,1);
+    
+    -- And assign all permissions to the Administrators group - you shouldn't need to modify this query.
+    INSERT INTO staff_group_staff_permission (staff_group_id,staff_permission_id) SELECT 1 AS group_id, staff_permission_id FROM staff_permission;
+    {% endhighlight %}
+    </li>
+</ol>
+
+<h3>Finalizing</h3>
+<p>Once you have verified your Kitto install works, you can disable access (read as: delete) to the system_check.php file.</p>
