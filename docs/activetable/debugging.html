@@ -1,0 +1,68 @@
+---
+layout: default
+title: Debugging ActiveTable
+---
+
+<p>ActiveTable has the capability to output a ton of useful debugging information, using either PEAR::Log or just printing to the user's screen. Two attributes control logging, <em>debug</em> and <em>logfile_path</em>:</p>
+
+<h3>Use</h3>
+<p>To have it log to a file:</p>
+
+{% highlight php %}
+<?php
+class Foo extends ActiveTable
+{
+    protected $table_name = 'foo';
+    protected $primary_key = 'foo_id';
+
+    protected $debug = true; // Defaults to false
+    protected $logfile_path = '/tmp/active_table.log'; // This is the default value
+} // end Foo class
+{% endhighlight %}
+
+To have your log messages outputted to the screen, set <em>logfile_path</em> to null instead of setting a path:
+
+{% highlight php %}
+<?php
+class Foo extends ActiveTable
+{
+    protected $table_name = 'foo';
+    protected $primary_key = 'foo_id';
+
+    protected $debug = true; // Defaults to false
+    protected $logfile_path = '';
+} // end Foo class
+?>
+{% endhighlight %}
+
+<h3>Logged Events</h3>
+<ul>
+    <li>Every SQL query executed is logged.</li>
+    <li>The execution time for every query executed is logged.</li>
+    <li>The total execution time for (most) methods is logged, along with the fact that they were called.</li>
+</ul>
+
+<h3>Extending</h3>
+<p>The method <em>#debug(mixed $message[,string $type])</em> is called to perform logging. Redefining this method to do something else is the easiest way to change the global logging behavior.</p>
+
+{% highlight php %}
+<?php
+class My_ActiveTable extends ActiveTable
+{
+    protected $debug = true;
+ 
+    // This is an example - I do NOT recommend you do this - even one pageload would
+    // send you dozens of emails!
+    protected function debug($message,$type='info')
+    {
+        send_email('admin@yourdomain.com',"[$type] ActiveTable Debug Event!",$message);
+    } // end debug
+} // end My_ActiveTable
+ 
+class Foo extends My_ActiveTable
+{
+    protected $table_name = 'foo';
+    protected $primary_key = 'foo_id'; 
+} // end Foo class
+?>
+{% endhighlight %}
