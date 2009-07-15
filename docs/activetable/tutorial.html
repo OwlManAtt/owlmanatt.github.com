@@ -1,0 +1,226 @@
+---
+layout: default
+title: ActiveTable Tutorial
+---
+<p>ActiveTable is a basic implementation of the active record design pattern. Its primary purpose is to provide very fast CRUD (create, read, update, and delete) operations to a developer by means of a simple API. PHP 5's __call() method is at the center of this API, enabling the friendly-looking likes of #getSometableId() and #findBySomeColumnName() to exist.</p>
+
+<p>ActiveTable was developed for use with MySQL and Oracle 9i, and depending on which of these two databases you are using, there are some considerations to take into account when determine what a table's primary key is.</p>
+
+<h3>ActiveTable Basics</h3> 
+<p>ActiveTable works by defining classes that extend from ActiveTable. At a bare minimum, the table name and primary key for the table must be specified in the class. Nothing else needs to be defined to begin taking advantage of ActiveTable's CRUD operations.</p>
+
+<p>This introduction will build ActiveTable classes for select tables from the Kitto database. Having the <a href='/images/kitto_er.png'>Kitto ER diagram</a> handy for this tutorial may be beneficial.</p>
+
+<h3>Representing a Table</h3>
+<p>The first and simplest thing to do is represent a single table. Doing so provides getters and setters for all of the columns in the table, finder methods for querying with WHERE conditions, and the ability to insert new rows and update existing rows.</p>
+
+{% highlight php %}
+<?php
+class User extends ActiveTable
+{
+    protected $table_name = 'user';
+    protected $primary_key = 'user_id';
+ 
+} // end User class
+ 
+// Grab all of our users and print some of their data.
+$users = new User($db);
+$users = $users->findBy(array()); // Find by with no WHERE conditions - give us EVERTHING!
+foreach($users as $user)
+{
+    print "{$user->getUserId()} -- {$user->getUserName()}";
+} // end device loop
+?>
+{% endhighlight %}
+
+<h3>Adding Lookup Tables</h3>
+<p>Of course, a user has an avatar and a timezone. It is easy to include this information using the $LOOKUPS attribute. This attribute is an array of associative arrays, so you may have as many lookup tables included in your query as you need.</p>
+
+<p>The columns are made available through the #getColumnName() methods, just like the columns from the primary table are, and they can be included in find operations. However, by default, performing #setColumnName() methods for columns in the lookup tables is not enabled for performance reasons. The attribute 'write' may be set to true to allow #set()s to take place.</p>
+
+<p>The local table involved in a JOIN is the table that is already included in your query, and the foreign table is the table you are adding. The two supported join types are inner and left. As shown by the avatar lookup, the local table can be left unspecified. It will default to the primary table.</p>
+
+{% highlight php %}
+<?php
+class User extends ActiveTable
+{
+    protected $table_name = 'user';
+    protected $primary_key = 'user_id';
+    protected $LOOKUPS = array(
+           array(
+               'local_key' => 'avatar_id',
+               'foreign_table' => 'avatar',
+               'foreign_key' => 'avatar_id',
+               'join_type' => 'left',
+           ),
+           array(
+               // A note on the local table - this doesn't have to match your $table_name!
+               // If we (hypothetically) had a item_type_id column in the avatar table (and we
+               // just joined to the avatar table), we could then join from avatar to item_type
+               // by setting 'local_table' to 'avatar'!
+               'local_table' => 'user', 
+               'local_key' => 'timezone_id',
+               'foreign_table' => 'timezone',
+               'foreign_key' => 'timezone_id',
+               'join_type' => 'inner',
+           ),
+    );
+} // end User class
+?>
+{% endhighlight %}
+
+<h3>Inserting and Updating</h3>
+<p>Inserting and updating rows via ActiveTable is as easy as set()ing your values and calling the #save() method. #save() is smart enough to know whether or not you are working with an existing row, and will opt to perform an INSERT or UPDATE when each is appropriate. As with the rest of ActiveTable, the query is performed using PEAR::DB's auto-execute feature, so your data is escaped using the appropriate method for the RDBMS, giving you protection against SQL injection attacks.</p>
+
+{% highlight php %}
+<?php
+// Load and update an existing row.
+$user = new User($db);
+$user = $user->findOneByUserId(1);
+$user->setSignature('- Owl');
+$user->save();
+ 
+// Create a fresh user, set some data, and insert it.
+$user = new User($db);
+$user->setUserName('InfinityB');
+$user->setProfile('oi oi oi');
+$user->save();
+?>
+{% endhighlight %}
+
+<p>There is another way to perform an insert operation. The #create() method takes an array of column/value pairs. When you wish to do an insert in a more programmatic manner, #create() is much simpler to use than generating the appropriate #setColumnNames() statements.</p>
+
+<p>Here is the insertion from the previous example rewritten to use #create().</p>
+
+{% highlight php %}
+<?php
+$DATA = array(
+    'user_name' => 'InfinityB',
+    'signature' => 'oi oi oi',
+);
+$user = new User($db);
+$user->create($DATA);
+?>
+{% endhighlight %}
+
+<h3>Searching</h3>
+<p>There are several ways to search for records using ActiveTable. First and foremost, there are two families of methods: #findBy() and #findOneBy(). Each column in the 'main' table (the one specified in $table_name) will have a #findByColumn() and #findOneByColumn() method available for simple, one-condition equality searches.</p>
+
+<p>For more complicated queries, the regular #findBy() and #findOneBy() methods are used. ActiveTable can do searches on any number of WHERE conditions on columns in all of the tables declared in the class (main and lookups). LIKE/NOT LIKE, IN/NOT IN, greater-than, less-than, etc. are all supported. However, at this time, there is no support for 'OR' conditions in queries.</p>
+
+<p>If the value is ever null, then a IS NULL/IS NOT NULL clause will be used. Similar to IN/NOT IN and LIKE/NOT LIKE, the search_type attribute being = or &lt;&gt; determines whether or not IS NULL or IS NOT NULL will be used.</p>
+
+<p>There are two ways to specify conditions in the regular, non-magic findBy/findOneBy methods:</p>
+
+{% highlight php %}
+<?php
+ $list = $ActiveObject->findBy(array(
+    'column' => 'foo', // If the column is in the main table, any number of column = value pairs can be specified.
+ 
+    // If the column is NOT in the main table or if you want to pick your search type, an associative array with a 
+    // number of parameters should be put into the first parameter's array, like so.
+    array(  
+        'table' => 'some_table',
+        'column' => 'some_column',
+        'like' => false, // True changes this to LIKE/NOT LIKE
+        'search_type' => '=', // Pick your operand. '<> > >= < <= =' are the available operands.
+        'value' => 'HELLO',
+    ),
+));
+?>
+{% endhighlight %}
+
+<h4>LIKE/NOT LIKE</h4>
+<p>LIKE and NOT LIKE can be enabled by passing like = true in a column's array: </p>
+
+{% highlight php %}
+<?php
+// This does a LIKE
+$list = $ActiveObject->findBy(array(
+    array(  
+        'table' => 'some_table',
+        'column' => 'some_column',
+        'like' => true,
+        'value' => 'Active%',
+    ),
+));
+
+// And this does NOT LIKE - note the search type.
+$list = $ActiveObject->findBy(array(
+    array(  
+        'table' => 'some_table',
+        'column' => 'some_column',
+        'like' => true,
+        'search_type' => '<>',
+        'value' => 'Active%',
+    ),
+));
+?>
+{% endhighlight %}
+
+<h4>IN/NOT IN</h4>
+<p>Doing a column IN ('a','b','c') or column NOT IN ('a','b','c') clause is easy: pass your value attribute as an array. If the search_type argument is not specified or is set to = (- is the default if unspecified), IN will be used. If it is set to <> (not equals), NOT IN will be used. </p>
+
+{% highlight php %}
+<?php
+ $list = $ActiveObject->findBy(array(
+     array(
+         'table' => 'some_table',
+         'column' => 'some_column',
+         'value' => array(10,11),
+     ),
+));
+?>
+{% endhighlight %}
+
+<h4>Doing COUNT(*)</h4>
+<p>The third parameter in a #findBy() call is used to instruct the method to return an integer instead of an array of results. By default, it is false - pass it as true to get the count back. ActiveTable will use COUNT(*) to get this value. This functionality can be used in conjunction with result slices for paginating rows in your table.</p>
+
+{% highlight php %}
+<?php
+$list_size = $ActiveObject->findBy(array(
+    'active' => 'Y',
+    'state' => 'CT',
+),null,true);
+?>
+{% endhighlight %}
+
+<h3>Result Set Slices (LIMIT)</h3>
+<p>The #findBy() can return a small slice of the greater set of rows returned by your query. In practice, ActiveTable can efficiently return between 30 and 100 objects without noticeable slowness (depending on the number of columns, field lengths, system load, CPU speed, memory, etc). After that, users will begin to notice a delay.</p>
+
+<p>That performance issue is not unique to ActiveTable; loading thousands upon thousands of results will bring any application to its knees. To prevent that, paginating your result sets is critical. #findBy() can help you do this if you pass its fourth and fifth arguments.</p>
+
+<p>When you are retrieving a slice, it is best practice to pass an ORDER BY clause in. This will prevent the RDBMS from re-ordering the result set between queries and returning slices that overlap when they should not.</p>
+
+The fourth and fifth argument are the slice start and slice end points - in our example, rows 1 through 25. Always start at 1 and not 0.</p>
+
+{% highlight php %}
+<?php
+$twenty_five_rows = $ActiveObject->findBy(array(
+    'active' => 'Y'
+),'ORDER BY id',false,1,25);
+?>
+{% endhighlight %}
+
+<h3>#findBy() vs. #findOneBy()</h3>
+<p>#findBy() is for retrieving multiple results and returning them in an array.</p>
+
+<p>#findOneBy() should be used when you want to find 1 record (LIMIT 1 in MySQL, for example) and return the object. The first and second arguments from #findBy() are exactly the same in #findOneBy(). Counting the number of results and obtaining a result slice, however, are inappropriate for a query that you want to return precisely one row.</p>
+
+<p>Be careful: the return from #findOneBy() is either an object or null, not an array!</p>
+
+<h3>Deleting</h3>
+<p>Deleting a single record is simple to do: call #destroy() on it. Only the record in the primary table will be affected, even if you have lookup tables write-enabled. Exactly one row from one table will be deleted.</p>
+
+{% highlight php %}
+<?php
+// Delete every user (because we can!)
+$users = new User($db);
+$users = $users->findBy(array());
+ 
+foreach($users as $user)
+{
+    $user->destroy();
+} // end loop
+?>
+{% endhighlight %} 
