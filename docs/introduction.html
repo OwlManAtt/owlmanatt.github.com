@@ -1,0 +1,123 @@
+---
+layout: default
+title: Introduction for New Kitto Developers
+---
+<p>Kitto is designed in the hopes that people will use it as a basis for their game. You are expected to hack at the code and add new features to your installation. The purpose of this article is to help you acclimate to Kitto's design patterns. </p>
+
+<h3>Model-View-Controller</h3>
+<p>Kitto is a purely object-oriented PHP5 application that adheres to the model-view-controller patten. Wikipedia summarizes this pattern well:</p>
+
+<blockquote>In complex computer applications that present a large amount of data to the user, a developer often wishes to separate data (model) and user interface (view) concerns, so that changes to the user interface will not affect data handling, and that the data can be reorganized without changing the user interface. The model-view-controller solves this problem by decoupling data access and business logic from data presentation and user interaction, by introducing an intermediate component: the controller.</blockquote>
+
+<p>In Kitto, the model maps to the tables in our database. The files in includes/classes/ are definitions for classes that represent the database tables in the code. Since each of these classes extend from ActiveTable, they get their basic CRUD (create, read, update, and delete) operations automatically. You will quickly notice that there are only five or six SQL queries in the whole application - that is because ActiveTable generates most of the SQL that you would traditionally write and test by hand.</p>
+
+<p>The controller maps to the scripts/ folder. Each script maps to a specific slug and works based on the HTTP request. These files do most of the work, massaging the data in the model into a form usable by the view/templates.</p> 
+
+<p>Finally, the view maps to the template/templates/ folder. These files each contain HTML fragments and placeholders for data to be inserted from the controller. When a response to the HTTP request is sent, many of the templates are used to generate a full HTML document. As made obvious to anybody looking at the sourcecode for Kitto, this separation of model/controller/view has kept the individual files very small, concise, and clean. Most of the bloat and ugliness in PHP comes from embedding HTML directly in your scripts.</p>
+
+<h3>URLs &amp; URL Rewriting</h3>
+<p>URLs for pages in Kitto do not refer directly to a physical file on the filesystem. Instead, the request URL is examined and rewritten by the webserver so that every request goes through index.php. In turn, that script analyzes the request and will decide whether or not to load another file, redirect the user to the login page or give them a 404/403 error. The rules for the URL rewriter, mod_rewrite, are defined in the .htaccess' file in the root of your Kitto install.</p>
+
+<p>A Kitto URL is made of of three components: a URL base, a page slug, and additional arguments, which may come in two forms. Here are some example URLs. The base URL is everything from the beginning of the URL to the start of the page slug. The slug is always the one 'folder' directly following the URL base.</p>
+
+<ul>
+    <li>http://kitto.yasashiisyndicate.org/news</li>
+    <li>http://kitto.yasashiisyndicate.org/profile/1</li>
+    <li>http://kitto.yasashiisyndicate.org/kitto/threads/1</li>
+</ul>
+
+<p>Notice that the last two URLs have /1 after their slugs. These are additional arguments given to the script. Normally, they would be ignored, but both the profile page and the threads page have additional rules defines in .htaccess to make the arguments meaningful. Here are the rewrite rules:</p>
+
+<pre>
+RewriteRule ^profile/([0-9]+) index.php?page_slug=profile&user_id=$1 [NC,L]
+RewriteRule ^threads/([0-9]+)(/([0-9]+))? index.php?page_slug=threads&board_id=$1&page=$3 [NC,L]
+</pre>
+
+<p>As shown, these pages are rewritten from /profile/1 to index.php?page_slug=profile&user_id=1. To anyone familiar with regular expressions, the voodoo being done in these rules is obvious: the first argument to RewriteRule is a regular-expression pattern that the webserver will try to match to the URL. If the URL matches that pattern, it will be translated into the second arguments. The $1 variable refers to the captured ([0-9]+) segment. /threads/ has a further argument, one which is optional - the page number. In certain cases, it may not be practical to map all of a script's arguments to /something in the URL. In those cases, the traditional ?arg=foo syntax will work just fine:</p>
+
+<ul>
+    <li>http://kitto.yasashiisyndicate.org/edit-something/?something[id]=123</li>
+</ul>
+
+<p>For more information on writing mod_rewrite rules, see ... I don't have a good tutorial for this yet. TODO. Note: Some FTP/SFTP clients may not show the .htaccess file unless you turn on a 'Show hidden files' option - the dot at the start of its name makes it a hidden file.</p>
+
+<h3>ActiveTable Quickstart Guide</h3>
+<p>ActiveTable is an implementation of the Active Record design pattern. In short, it wraps a single table in the database and gives you a number of ways to work with the data in that table without having to write much code. Kitto relies heavily on ActiveTable. ActiveTable works by defining classes that extend from ActiveTable. At a bare minimum, the table name and primary key for the table must be specified in the class. Nothing else needs to be defined to begin taking advantage of ActiveTable's CRUD operations. For example, the includes/classes/user/datetime_format.class.php file:</p>
+
+{% highlight php %}
+<?php
+class DatetimeFormat extends ActiveTable
+{
+    protected $table_name = 'datetime_format';
+    protected $primary_key = 'datetime_format_id';
+} // end DatetimeFormat
+?>
+{% endhighlight %}
+
+With just those four lines of code, you can search the table for specific rows, add rows, update rows, or delete rows: 
+
+{% highlight php %}
+<?php
+$format = new DatetimeFormat($db); // The argument $db is the variable for mg's DB connector.
+$format = $format->findOneByDatetimeFormatId(1); // Return a new instance of DatetimeFormat representing the row with datetime_format_id = 1
+
+$format->setDatetimeFormatName('Foo'); // Set updates a column's value *in the object*.
+$format->save(); // Save writes the object back to the database - in other words, it performs the UPDATE that makes our setDatetimeFormatName() permanent.
+?>
+{% endhighlight %}
+
+<p>However, that is one of the simplest class definitions in MG. Most other classes have additional methods defined to do things like return the full URL to an image (as opposed to just the chunk stored in the database table), format a piece of data, or perform a complicated, hand-written query and return its results. ActiveTable can do much more than just these simple operations.</p>
+
+<h3>Smarty Quickstart Guide</h3>
+<p>Smarty is a templating engine (and it has a great many features). All HTML generated by Kitto resides inside of Smarty templates. Using Smarty from a script involves doing two things - first, you must assign some data to the rendering engine. Assigning the data makes it available inside of the template. Secondly, you must display and existing template. Note that the $renderer variable is the name of the Smarty instance that is available in Kitto.</p>
+
+{% highlight php %}
+<?php
+$renderer->assign('name','Username'); // This assigns the value 'Username' to the $name variable inside of your template.
+$renderer->display('users/greet.tpl'); // This renders a template. The path is relative to the Smarty template directory (template/templates).
+?>
+{% endhighlight %}
+
+<p>Smarty template files support substituting variables in, modifying those variables, looping over variables, including other templates, and many other features. Smarty operations belong inside of curly-braces, as shown in the below example.</p>
+
+{% highlight smarty %}
+Hello, {$name}!
+{% endhighlight %}
+
+<p>The curly-braces being used to indicate that Smarty has to evaluate something may cause problems when you are embedding Javascript or CSS in your page. To prevent Smarty from evaluating a block, you can temporarily force Smarty to ignore curly-braces with the {literal}{/literal} tags.</p>
+
+{% highlight smarty %}
+{literal}
+function foobar() {
+return true;
+}
+{/literal}
+{% endhighlight %}
+
+<p>Smarty is an immensely powerful tool. Kitto has introduced several variable modifiers and functions to Smarty, which you should familiarize yourself with. The Smarty manual is also an excellent resource that you should, at the very least, skim over to get an idea of all the things Smarty can do.</p>
+
+<h3>Directory Structure</h3>
+<p>The root directory of Kitto contains a number of files and folders:</p>
+
+<ul>
+    <li>captcha.php - The script that generates the security code images.
+    <li>index.php - The file that routes requests to their appropriate page based on the slug in the request.
+    <li>.htaccess - The mod_rewrite rules for URL rewriting.
+    <li>CHANGES, CREDITS, LICENSE, README - Text files with notes about Kitto.
+    <li>cache/ - A directory used by HTMLPurifier for caching lists that it generates when it gets used.
+    <li>db/ - All of the SQL you will need for setting your database up.
+    <li>docs/ - Documentation, including a place to store the auto-generated API docs.
+    <li>external_lib/ - Third-party libraries that Kitto depends on. You do not need this folder if you already have the appropriate versions of the libraries in your include path.
+    <li>includes/ - This directory contains the config file and all of Kitto's classfiles.
+    <li>resources/ - This folder contains web resources such as images, javascript, and CSS.
+    <li>scripts/ - This folder contains all of the pages' script files.
+    <li>template/ - Container for the four required Smarty folders.
+        <ul>
+              <li>templates/ - Your template files.</li>
+              <li>configs/ - Additional Smarty configuration.</li>
+              <li>templates_c/ - A cache for 'compiled' templates.</li>
+              <li>cache/ - Used to cache template output, if you have caching enabled.</li>
+    </li>
+</ul>
+
+<p>By default, all of these folders/files are in the top-level of Kitto, next to index.php - meaning that they all end up in your public_html (or other web-accessible) folder. Strictly speaking, you only need index.php, captcha.php, and resources/ to be web-accessible. The notes files, db/ and docs/ can be deleted once your installation is set up.</p>

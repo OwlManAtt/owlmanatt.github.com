@@ -1,0 +1,22 @@
+---
+layout: default
+title: Permission System
+---
+
+<p>Kitto's permission system takes a granular approach to granting users access to pages, specific functions, and boards. Each action/board/file you want to protect may have its own permission preventing users from accessing it. Permissions can be assigned to staff groups, and then users may be placed in these staff groups. A user may belong to more than one staff group (ie, moderators, Special Moderators with Ban Powers, and Artists). When the user's permissions are checked, the permissions they get from each group are examined to determine if they are permitted to request whatever resource they are trying to request.</p>
+
+<h3>Adding Permissions</h3>
+<p>There is no way to add permissions via the Kitto admin UI. Adding a new permission usually entails writing new code to go with the permission, so it was decided that somebody must add it manually to the <em>staff_permissions</em> table.</p>
+
+<p>Once the permission is in the database, going to the <em>Permissions</em> section of the Kitto admin panel and edit a group. You will see that this permission is now listed, and by default, is not given to any groups. Check the checkbox and submit the form to give the group the permission. The effects are instant.</p> 
+
+<h3>Permissions &amp; Boards</h3>
+<p>It is possible to restrict access to boards based on group permissions. Assigning a permission to a board prevents all users without that permission from viewing/posting/moderating it - even if they are an administrator. For any 'special project' boards, it's possible to put regular, non-staff users into a staff group, suppress it from showing on the staff page, and giving the group a permission for accessing a hidden board.</p>
+
+<p>To set a permission on a board, edit the board through the Kitto admin UI and pick a permission other than 'None' from the dropdown.</p>
+
+<h3>Permissions and Pages</h3>
+<p>Pages can be protected by specifying the 'restricted' access level and the name of a permission in the jump_pages table. If the user does not have the appropriate permission, then the script file will never be require()'d. Instead, a 403 error will be shown. </p>
+
+<h3>Groups and the Staff Page</h3>
+<p>These permission groups will show up on the staff page with a list of members if the Show Staff Group setting is 'Yes'.</p>
