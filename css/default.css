@@ -181,3 +181,7 @@ h3 {
     vertical-align: top; 
     font-weight: bold;
 }
+
+.latest {
+    font-weight: bold;
+}
